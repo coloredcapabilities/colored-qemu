@@ -12,6 +12,10 @@
  * Cambridge Computer Laboratory (Department of Computer Science and
  * Technology) under DARPA contract HR0011-18-C-0016 ("ECATS"), as part of the
  * DARPA SSITH research programme.
+ * 
+ *  Colored-Cap modifications: 
+ *      Author: Merve Gulmez
+ *      Copyright (c) 2025 Ericsson AB 
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,7 +45,7 @@
 #include "cheri-bounds-stats.h"
 #include "tcg/tcg.h"
 #include "tcg/tcg-op.h"
-#include "exec/exec-all.h"
+#include "exec/cpu_ldst.h"
 
 static inline void derive_cap_from_pcc(CPUArchState *env, uint32_t cd,
                                        target_ulong new_addr, uintptr_t retpc,
@@ -317,9 +321,16 @@ static inline QEMU_ALWAYS_INLINE target_ulong cap_check_common_reg(
     if (!cbp->cr_tag) {
         raise_cheri_exception_addr_wnr(env, CapEx_TagViolation, cb, addr,
                                        !is_load);
+#if defined(TARGET_AARCH64) || defined(TARGET_MIPS)
     } else if (!cap_is_unsealed(cbp)) {
+      raise_cheri_exception_addr_wnr(env, CapEx_SealViolation, cb, addr,
+                                    !is_load);
+#else
+    //hwaddr phys_ccp = riscv_cpu_get_phys_page_debug(env_cpu(env), env->ccp);
+    } else if (!cap_is_unsealed_with_ccp(env, cbp)) {
         raise_cheri_exception_addr_wnr(env, CapEx_SealViolation, cb, addr,
                                        !is_load);
+#endif
     } else if (MISSING_REQUIRED_PERM(CAP_PERM_LOAD)) {
         raise_cheri_exception_addr_wnr(env, CapEx_PermitLoadViolation, cb, addr,
                                        false);
@@ -339,7 +350,6 @@ static inline QEMU_ALWAYS_INLINE target_ulong cap_check_common_reg(
         }
     }
 #undef MISSING_REQUIRED_PERM
-
     if (!in_bounds) {
         qemu_log_instr_or_mask_msg(
             env, CPU_LOG_INT,
@@ -347,7 +357,7 @@ static inline QEMU_ALWAYS_INLINE target_ulong cap_check_common_reg(
             " base=" TARGET_FMT_lx " top=" TARGET_FMT_lx "\n",
             addr, cap_get_base(cbp), cap_get_top(cbp));
         raise_cheri_exception_addr_wnr(env, CapEx_LengthViolation, cb, addr,
-                                       !is_load);
+                                      !is_load);
     } else if (alignment_required &&
                !QEMU_IS_ALIGNED_P2(addr, alignment_required)) {
         if (unaligned_handler) {

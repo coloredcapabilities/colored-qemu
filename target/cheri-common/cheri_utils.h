@@ -16,6 +16,10 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
+ * 
+ *  Colored-Cap modifications: 
+ *      Author: Merve Gulmez
+ *      Copyright (c) 2025 Ericsson AB 
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -34,7 +38,7 @@
 #include "qemu/compiler.h"
 #include "qemu/osdep.h"
 #include "qemu/error-report.h"
-
+#include "exec/cpu_ldst.h"
 #include "cheri_defs.h"
 
 #ifdef TARGET_AARCH64
@@ -168,9 +172,12 @@ static inline target_long cap_get_otype_signext(const cap_register_t *c)
      * We "sign" extend to a 64-bit number by subtracting the maximum:
      * e.g. for 64-bit CHERI-RISC-V unsigned 2^18-1 maps to 2^64-1
      */
-    return result < CAP_CC(MIN_RESERVED_OTYPE)
-               ? result
-               : result - CAP_MAX_REPRESENTABLE_OTYPE - 1;
+     const target_ulong max = CAP_MAX_REPRESENTABLE_OTYPE;
+     if (result == max || result == max - 1 || result == max - 2 || result == max - 3) {
+         return result - max - 1;
+     } else {
+         return result;
+     }
 #endif
 }
 
@@ -251,6 +258,39 @@ static inline bool cap_is_unsealed(const cap_register_t *c)
     target_ulong otype = cap_get_otype_unsigned(c);
     return otype == CAP_OTYPE_UNSEALED;
 }
+
+uintptr_t GETPC_wrapper(void);
+bool cap_is_unsealed_with_ccp(CPUArchState *env, const cap_register_t *c);
+// static inline bool cap_is_unsealed_with_ccp(CPUArchState *env, const cap_register_t *c)
+// {
+// #if defined(TARGET_RISCV)
+//     target_ulong ccp = env->ccp;
+//     target_ulong otype = cap_get_otype_unsigned(c);
+//     if (otype == CAP_OTYPE_UNSEALED)
+//        return true; 
+       
+//     if(cap_otype_is_reserved(otype)){
+//         return false;
+//     }
+//     printf("cap: %p\n", c);
+//     uint64_t word_index = otype / 64;
+//     uint64_t bit_offset = otype % 64;
+
+//      // Calculate the address of the bitmap word
+//     target_ulong word_addr = ccp + word_index * sizeof(target_ulong);
+//     void *host = probe_read(env, word_addr, sizeof(uint64_t), cpu_mmu_index(env, true), GETPC_wrapper());
+//     uint64_t word;
+//     if (likely(host)) {
+//         word = ldq_p((char *)host);
+//     } else {
+//         word = cpu_ld_cap_word_ra(env, word_addr, GETPC_wrapper());
+//     }
+//     return !((word >> bit_offset) & 1);
+// #else
+//     return cap_is_unsealed(c);
+// #endif
+// }
+
 
 static inline void cap_set_sealed(cap_register_t *c, uint32_t type)
 {

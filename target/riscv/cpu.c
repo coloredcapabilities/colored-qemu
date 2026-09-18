@@ -726,6 +726,8 @@ static void riscv_cpu_reset(DeviceState *dev)
     // Also reset mepc/sepc to zero for predicatable behaviour
     env->mepc = 0;
     env->sepc = 0;
+    env->ccp = 0;
+    env->ccpt = 0;
 #else
     if (!cpu->cfg.ext_cheri) {
         error_report("CHERI extension can't be disabled yet!");

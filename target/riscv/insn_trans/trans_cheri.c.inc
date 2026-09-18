@@ -235,6 +235,7 @@ static bool trans_cspecialrw(DisasContext *ctx, arg_cspecialrw *a)
 
 // Three operand (cap cap int)
 TRANSLATE_CAP_CAP_INT(candperm)
+TRANSLATE_CAP_CAP_INT(ccsettype)
 TRANSLATE_CAP_CAP_INT(cfromptr)
 TRANSLATE_CAP_CAP_INT(cincoffset)
 TRANSLATE_CAP_CAP_INT(csetaddr)

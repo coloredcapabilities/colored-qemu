@@ -1146,7 +1146,6 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
                 /* PMP has no CHERI permissions; preserve trap/clear */
                 prot &= prot_pmp | prot_lc_preserve | prot_sc_preserve;
             }
-
             if (ret != TRANSLATE_SUCCESS) {
                 /*
                  * Guest physical address translation failed, this is a HS
@@ -1163,7 +1162,6 @@ bool riscv_cpu_tlb_fill(CPUState *cs, vaddr address, int size,
         ret = get_physical_address(env, &pa, &prot, address, NULL,
                                    access_type, mmu_idx, true, false);
         ret = rvfi_dii_check_addr(env, ret, &pa, address, size, &prot, access_type);
-
         qemu_log_mask(CPU_LOG_MMU,
                       "%s address=%" VADDR_PRIx " ret %d physical "
                       TARGET_FMT_plx " prot %d\n",

@@ -13,6 +13,10 @@
  * Technology) under DARPA contract HR0011-18-C-0016 ("ECATS"), as part of the
  * DARPA SSITH research programme.
  *
+ *  Colored-Cap modifications: 
+ *      Author: Merve Gulmez
+ *      Copyright (c) 2025 Ericsson AB 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -95,6 +99,7 @@ DEF_HELPER_4(cunseal, void, env, i32, i32, i32)
 // Three operands (cap cap int)
 DEF_HELPER_4(candaddr, void, env, i32, i32, tl)
 DEF_HELPER_4(candperm, void, env, i32, i32, tl)
+DEF_HELPER_4(ccsettype, void, env, i32, i32, tl)
 DEF_HELPER_4(cfromptr, void, env, i32, i32, tl)
 DEF_HELPER_4(cincoffset, void, env, i32, i32, tl)
 

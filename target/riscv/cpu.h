@@ -153,7 +153,9 @@ struct CPURISCVState {
 #endif
 
     target_ulong frm;
-
+    target_ulong ccp;
+    target_ulong ccpt;
+    int counter;
     target_ulong badaddr;
     target_ulong guest_phys_fault_addr;
 #ifdef TARGET_CHERI

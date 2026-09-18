@@ -5,7 +5,7 @@
  * Copyright (c) 2016-2018 Alfredo Mazzinghi <am2419@cl.cam.ac.uk>
  * Copyright (c) 2016-2020 Alex Richardson <Alexander.Richardson@cl.cam.ac.uk>
  * All rights reserved.
- *
+ * 
  * This software was developed by SRI International and the University of
  * Cambridge Computer Laboratory under DARPA/AFRL contract FA8750-10-C-0237
  * ("CTSRD"), as part of the DARPA CRASH research programme.
@@ -14,6 +14,10 @@
  * Cambridge Computer Laboratory (Department of Computer Science and
  * Technology) under DARPA contract HR0011-18-C-0016 ("ECATS"), as part of the
  * DARPA SSITH research programme.
+ *
+ *  Colored-Cap modifications: 
+ *      Author: Merve Gulmez
+ *      Copyright (c) 2025 Ericsson AB 
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -113,10 +117,11 @@ try_set_cap_cursor(CPUArchState *env, const cap_register_t *cptr,
     oob_info->num_uses++;
 #endif
 
-    if (unlikely(cptr->cr_tag && is_cap_sealed(cptr))) {
+    if (unlikely(cptr->cr_tag && !cap_is_unsealed_with_ccp(env, cptr))) {
         raise_cheri_exception_or_invalidate_impl(env, CapEx_SealViolation,
                                                  regnum_src, retpc);
     }
+
 #ifndef TARGET_MORELLO
     /*
      * For Morello we can't just check for in-bounds since changing the sign
@@ -291,7 +296,6 @@ target_ulong CHERI_HELPER_IMPL(cgetperm(CPUArchState *env, uint32_t cb))
     cheri_debug_assert((cap_get_uperms(cbp) & CAP_UPERMS_ALL) ==
                            cap_get_uperms(cbp) &&
                        "Unknown SW perms bits set!");
-
     return COMBINED_PERMS_VALUE(cbp);
 }
 
@@ -326,7 +330,9 @@ target_ulong CHERI_HELPER_IMPL(cgettype(CPUArchState *env, uint32_t cb))
      * CGetType: Move Object Type Field to a General-Purpose Register.
      */
     const cap_register_t *cbp = get_readonly_capreg(env, cb);
-    const target_long otype = cap_get_otype_signext(cbp);
+    target_long otype = cap_get_otype_signext(cbp);
+    //const target_long uperm = cap_get_uperms(cbp) & 0x7;
+
 #ifdef TARGET_MORELLO
     cheri_debug_assert(otype == cap_get_otype_unsigned(cbp));
 #else
@@ -950,9 +956,10 @@ void CHERI_HELPER_IMPL(candperm(CPUArchState *env, uint32_t cd, uint32_t cb,
      */
     if (!cbp->cr_tag) {
         raise_cheri_exception_or_invalidate(env, CapEx_TagViolation, cb);
-    } else if (!cap_is_unsealed(cbp)) {
-        raise_cheri_exception_or_invalidate(env, CapEx_SealViolation, cb);
-    }
+    } 
+    //else if (!cap_is_unsealed(cbp)) {
+    //    raise_cheri_exception_or_invalidate(env, CapEx_SealViolation, cb);
+    //}
 
     uint32_t rt_perms = (uint32_t)rt & (CAP_PERMS_ALL);
     uint32_t rt_uperms = ((uint32_t)rt >> CAP_UPERMS_SHFT) & CAP_UPERMS_ALL;
@@ -964,6 +971,26 @@ void CHERI_HELPER_IMPL(candperm(CPUArchState *env, uint32_t cd, uint32_t cb,
     CAP_cc(update_uperms)(&result, cap_get_uperms(cbp) & rt_uperms);
     update_capreg(env, cd, &result);
 }
+
+void CHERI_HELPER_IMPL(ccsettype(CPUArchState *env, uint32_t cd, uint32_t cb,
+  target_ulong rt))
+{
+    GET_HOST_RETPC_IF_TRAPPING_CHERI_ARCH();
+    DEFINE_RESULT_VALID;
+    const cap_register_t *cbp = get_readonly_capreg(env, cb);
+    /*
+    * CAndPerm: Restrict Permissions
+    */
+    if (!cbp->cr_tag) {
+      raise_cheri_exception_or_invalidate(env, CapEx_TagViolation, cb);
+    }
+
+    
+    cap_register_t result = *cbp;
+    CAP_cc(update_otype)(&result, rt);
+    update_capreg(env, cd, &result);
+}
+
 
 void CHERI_HELPER_IMPL(cincoffset(CPUArchState *env, uint32_t cd, uint32_t cb,
                                   target_ulong rt))
@@ -1383,6 +1410,38 @@ void squash_mutable_permissions(CPUArchState *env, target_ulong *pesbt,
 #endif
 }
 
+uintptr_t GETPC_wrapper(void);
+bool cap_is_unsealed_with_ccp(CPUArchState *env, const cap_register_t *c)
+{
+#if defined(TARGET_RISCV)
+    target_ulong ccp = env->ccp;
+    target_ulong otype = cap_get_otype_unsigned(c);
+    if (otype == CAP_OTYPE_UNSEALED)
+       return true; 
+       
+    if(cap_otype_is_reserved(otype)){
+        return false;
+    }
+    //printf("cap: %p\n", c);
+    uint64_t word_index = otype / 64;
+    uint64_t bit_offset = otype % 64;
+    int mmu_idx = cpu_mmu_index(env, true);
+    uint64_t word;
+     // Calculate the address of the bitmap word
+    target_ulong word_addr = ccp + word_index * sizeof(target_ulong);
+    void *host = probe_read(env, word_addr, sizeof(uint64_t),  0, GETPC_wrapper());
+     if (likely(host)) {
+         word = ldq_p((char *)host);
+     } else {
+        word = cpu_ld_cap_word_ra(env, word_addr, GETPC_wrapper());
+     }
+
+    return !((word >> bit_offset) & 1);
+#else
+    return cap_is_unsealed(c);
+#endif
+}
+
 bool load_cap_from_memory_raw_tag_mmu_idx(
     CPUArchState *env, target_ulong *pesbt, target_ulong *cursor, uint32_t cb,
     const cap_register_t *source, target_ulong vaddr, uintptr_t retpc,
@@ -1744,4 +1803,8 @@ void helper_capreg_state_debug(CPUArchState *env, uint32_t regnum,
 
     // Should include the actual state
     assert((flags & (1 << (uint64_t)regstate)) && pc);
+}
+
+uintptr_t GETPC_wrapper(void){
+    return GETPC();
 }

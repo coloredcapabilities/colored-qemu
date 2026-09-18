@@ -366,6 +366,8 @@
 #define CSR_UCCSR           0x8C0
 #define CSR_SCCSR           0x9C0
 #define CSR_MCCSR           0xBC0
+#define CSR_CCP             0x012
+#define CSR_CCPT             0x013
 
 /* See Capability Control and Status Registers (CCSRs) in CHERI ISA spec. */
 #define XCCSR_ENABLE        0x1 /* Capability extensions enabled */

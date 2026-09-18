@@ -526,6 +526,7 @@ typedef enum {
     rv_op_cseal,
     rv_op_cunseal,
     rv_op_candperm,
+    rv_op_ccsettype,
     rv_op_csetflags,
     rv_op_csetoffset,
     rv_op_csetaddr,
@@ -1259,6 +1260,7 @@ const rv_opcode_data opcode_data[] = {
     [rv_op_cseal] = { "cseal", rv_codec_r, rv_fmt_cd_cs1_cs2, NULL, 0, 0, 0 },
     [rv_op_cunseal] = { "cunseal", rv_codec_r, rv_fmt_cd_cs1_cs2, NULL, 0, 0, 0 },
     [rv_op_candperm] = { "candperm", rv_codec_r, rv_fmt_cd_cs1_rs2, NULL, 0, 0, 0 },
+    [rv_op_ccsettype] = { "ccsettype", rv_codec_r, rv_fmt_cd_cs1_rs2, NULL, 0, 0, 0 },
     [rv_op_csetflags] = { "csetflags", rv_codec_r, rv_fmt_cd_cs1_rs2, NULL, 0, 0, 0 },
     [rv_op_csetoffset] = { "csetoffset", rv_codec_r, rv_fmt_cd_cs1_rs2, NULL, 0, 0, 0 },
     [rv_op_csetaddr] = { "csetaddr", rv_codec_r, rv_fmt_cd_cs1_rs2, NULL, 0, 0, 0 },
@@ -1474,6 +1476,8 @@ static const char *csr_name(int csrno)
     case 0x0d81: return "stimeh";
     case 0x0d82: return "sinstreth";
     case 0x0e00: return "hcycle";
+    case 0x0012: return "ccp";
+    case 0x0013: return "ccpt";
     case 0x0e01: return "htime";
     case 0x0e02: return "hinstret";
     case 0x0e80: return "hcycleh";
@@ -1528,7 +1532,8 @@ static rv_opcode decode_cheri_inst(rv_inst inst) {
     // 0001010 unused
     CHERI_THREEOP_CASE(cseal,       0001011,  ..... ..... 000 ..... 1011011 @r)
     CHERI_THREEOP_CASE(cunseal,     0001100,  ..... ..... 000 ..... 1011011 @r)
-    CHERI_THREEOP_CASE(candperm,    0001101,  ..... ..... 000 ..... 1011011 @r)
+    CHERI_THREEOP_CASE(candperm,    0001101,  ..... ..... 000 ..... 1011011 @r) 
+    
     CHERI_THREEOP_CASE(csetflags,   0001110,  ..... ..... 000 ..... 1011011 @r)
     CHERI_THREEOP_CASE(csetoffset,  0001111,  ..... ..... 000 ..... 1011011 @r)
     CHERI_THREEOP_CASE(csetaddr,    0010000,  ..... ..... 000 ..... 1011011 @r)
@@ -1537,12 +1542,14 @@ static rv_opcode decode_cheri_inst(rv_inst inst) {
     CHERI_THREEOP_CASE(cfromptr,    0010011,  ..... ..... 000 ..... 1011011 @r)
     CHERI_THREEOP_CASE(csub,        0010100,  ..... ..... 000 ..... 1011011 @r)
     CHERI_THREEOP_CASE(csethigh,    0010110,  ..... ..... 000 ..... 1011011 @r)
+    CHERI_THREEOP_CASE(ccsettype,    0010101,  ..... ..... 000 ..... 1011011 @r)
     // 0010101-0011100 unused
     CHERI_THREEOP_CASE(cbuildcap,   0011101,  ..... ..... 000 ..... 1011011 @r)
     CHERI_THREEOP_CASE(ccopytype,   0011110,  ..... ..... 000 ..... 1011011 @r)
     CHERI_THREEOP_CASE(ccseal,      0011111,  ..... ..... 000 ..... 1011011 @r)
     CHERI_THREEOP_CASE(ctestsubset, 0100000,  ..... ..... 000 ..... 1011011 @r)
     CHERI_THREEOP_CASE(cseqx,       0100001,  ..... ..... 000 ..... 1011011 @r)
+
     // 1111011 unused
     // TODO: 1111100 Used for Stores (see below)
     // TODO: 1111101 Used for Loads (see below)

@@ -249,8 +249,8 @@ void HELPER(amoswap_cap)(CPUArchState *env, uint32_t dest_reg,
 
     if (!cbp->cr_tag) {
         raise_cheri_exception(env, CapEx_TagViolation, addr_reg);
-    } else if (!cap_is_unsealed(cbp)) {
-        raise_cheri_exception(env, CapEx_SealViolation, addr_reg);
+    //} else if (!cap_is_unsealed(cbp)) {
+    //    raise_cheri_exception(env, CapEx_SealViolation, addr_reg);
     } else if (!cap_has_perms(cbp, CAP_PERM_LOAD)) {
         raise_cheri_exception(env, CapEx_PermitLoadViolation, addr_reg);
     } else if (!cap_has_perms(cbp, CAP_PERM_STORE)) {
@@ -300,8 +300,8 @@ static void lr_c_impl(CPUArchState *env, uint32_t dest_reg, uint32_t auth_reg,
     const cap_register_t *cbp = get_load_store_base_cap(env, auth_reg);
     if (!cbp->cr_tag) {
         raise_cheri_exception(env, CapEx_TagViolation, auth_reg);
-    } else if (!cap_is_unsealed(cbp)) {
-        raise_cheri_exception(env, CapEx_SealViolation, auth_reg);
+    //} else if (!cap_is_unsealed(cbp)) {
+    //    raise_cheri_exception(env, CapEx_SealViolation, auth_reg);
     } else if (!cap_has_perms(cbp, CAP_PERM_LOAD)) {
         raise_cheri_exception(env, CapEx_PermitLoadViolation, auth_reg);
     }
@@ -367,8 +367,8 @@ static target_ulong sc_c_impl(CPUArchState *env, uint32_t addr_reg,
 
     if (!cbp->cr_tag) {
         raise_cheri_exception(env, CapEx_TagViolation, addr_reg);
-    } else if (!cap_is_unsealed(cbp)) {
-        raise_cheri_exception(env, CapEx_SealViolation, addr_reg);
+    //} else if (!cap_is_unsealed(cbp)) {
+    //    raise_cheri_exception(env, CapEx_SealViolation, addr_reg);
     } else if (!cap_has_perms(cbp, CAP_PERM_STORE)) {
         raise_cheri_exception(env, CapEx_PermitStoreViolation, addr_reg);
     } else if (!cap_has_perms(cbp, CAP_PERM_STORE_CAP)) {

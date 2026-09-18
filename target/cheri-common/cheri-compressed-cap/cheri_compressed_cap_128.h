@@ -13,6 +13,11 @@
  * Technology) under DARPA contract HR0011-18-C-0016 ("ECATS"), as part of the
  * DARPA SSITH research programme.
  *
+ * 
+ *  Colored-Cap modifications: 
+ *      Author: Merve Gulmez
+ *      Copyright (c) 2025 Ericsson AB 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -68,11 +73,13 @@ typedef int64_t cc128_saddr_t;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 enum {
-    _CC_FIELD(UPERMS, 127, 124),
-    _CC_FIELD(HWPERMS, 123, 112),
-    _CC_FIELD(RESERVED, 111, 110),
-    _CC_FIELD(FLAGS, 109, 109),
-    _CC_FIELD(OTYPE, 108, 91),
+    _CC_FIELD(UPERMS, 127, 126), //2 bits 
+    _CC_FIELD(HWPERMS, 125, 114), //12 bits
+    _CC_FIELD(RESERVED, 113, 113),
+    _CC_FIELD(FLAGS, 112, 112),
+    _CC_FIELD(OTYPE, 111, 91), //21 bits 
+    //_CC_FIELD(RESERVED, 92, 92),
+    //_CC_FIELD(FLAGS, 91, 91),
     _CC_FIELD(EBT, 90, 64),
 
     _CC_FIELD(INTERNAL_EXPONENT, 90, 90),
@@ -115,15 +122,15 @@ _CC_STATIC_ASSERT(CC128_HIGHEST_PERM < CC128_FIELD_HWPERMS_MAX_VALUE, "permissio
 _CC_STATIC_ASSERT((CC128_HIGHEST_PERM << 1) > CC128_FIELD_HWPERMS_MAX_VALUE, "all permission bits should be used");
 
 #define CC128_PERMS_ALL (0xfff) /* [0...11] */
-#define CC128_UPERMS_ALL (0xf)  /* [15...18] */
+#define CC128_UPERMS_ALL (0x3)  /* [15...16] */
 #define CC128_UPERMS_SHFT (15)
 #define CC128_UPERMS_MEM_SHFT (12)
-#define CC128_MAX_UPERM (3)
+#define CC128_MAX_UPERM (0x3)
 
 // We reserve 16 otypes
 enum _CC_N(OTypes) {
     CC128_FIRST_NONRESERVED_OTYPE = 0,
-    CC128_MAX_REPRESENTABLE_OTYPE = ((1u << CC128_OTYPE_BITS) - 1u),
+    CC128_MAX_REPRESENTABLE_OTYPE = ((1u << 21) - 1u),
     _CC_SPECIAL_OTYPE(OTYPE_UNSEALED, 0),
     _CC_SPECIAL_OTYPE(OTYPE_SENTRY, 1),
     _CC_SPECIAL_OTYPE(OTYPE_INDIRECT_PAIR, 2),
@@ -149,7 +156,7 @@ _CC_STATIC_ASSERT_SAME(CC128_MANTISSA_WIDTH, CC128_FIELD_EXP_ZERO_BOTTOM_SIZE);
 #include "cheri_compressed_cap_common.h"
 
 // Sanity-check mask is the expected NULL encoding
-_CC_STATIC_ASSERT_SAME(CC128_NULL_XOR_MASK, UINT64_C(0x00001ffffc018004));
+//_CC_STATIC_ASSERT_SAME(CC128_NULL_XOR_MASK, UINT64_C(0x00001ffffc018004));
 
 __attribute__((deprecated("Use cc128_compress_raw"))) static inline uint64_t
 compress_128cap_without_xor(const cc128_cap_t* csp) {

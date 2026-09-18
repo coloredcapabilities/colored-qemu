@@ -761,6 +761,33 @@ static int write_mcause(CPURISCVState *env, int csrno, target_ulong val)
     return 0;
 }
 
+/* csr_ccp read and write */
+static int read_ccp(CPURISCVState *env, int csrno, target_ulong *val)
+{
+  *val = env->ccp;
+  return 0;
+}
+
+static int write_ccp(CPURISCVState *env, int csrno, target_ulong val)
+{
+  env->ccp = val;
+  return 0;
+}
+
+
+/* csr_ccp read and write */
+static int read_ccpt(CPURISCVState *env, int csrno, target_ulong *val)
+{
+  *val = env->ccpt;
+  return 0;
+}
+
+static int write_ccpt(CPURISCVState *env, int csrno, target_ulong val)
+{
+  env->ccpt = val;
+  return 0;
+}
+
 static int read_mbadaddr(CPURISCVState *env, int csrno, target_ulong *val)
 {
     *val = env->mbadaddr;
@@ -1714,6 +1741,8 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
     [CSR_UCCSR] =               CSR_OP_FN_RW(umode, read_ccsr, write_ccsr, "uccsr"),
     [CSR_SCCSR] =               CSR_OP_FN_RW(smode, read_ccsr, write_ccsr, "sccsr"),
     [CSR_MCCSR] =               CSR_OP_FN_RW(any, read_ccsr, write_ccsr, "mccsr"),
+    [CSR_CCP] =                 CSR_OP_RW(any, ccp),
+    [CSR_CCPT] =                 CSR_OP_RW(any, ccpt),
 #endif
 
     /* Physical Memory Protection */

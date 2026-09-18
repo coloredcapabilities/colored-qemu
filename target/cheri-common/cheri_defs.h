@@ -8,6 +8,10 @@
  * Cambridge Computer Laboratory (Department of Computer Science and
  * Technology) under DARPA contract HR0011-18-C-0016 ("ECATS"), as part of the
  * DARPA SSITH research programme.
+ * 
+ *  Colored-Cap modifications: 
+ *      Author: Merve Gulmez
+ *      Copyright (c) 2025 Ericsson AB 
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,6 +35,7 @@
  * SUCH DAMAGE.
  */
 #pragma once
+
 
 #if defined CONFIG_DEBUG_TCG || defined QEMU_STATIC_ANALYSIS
 # define cheri_debug_assert(X) do { assert(X); } while (0)
